@@ -7,7 +7,9 @@ import {
   useMap,
   Polyline,
 } from "react-leaflet";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Plot } from "./Plot";
+import moment from "moment";
 
 async function readDocument(rawFile, type = "application/xml") {
   const reader = new FileReader();
@@ -53,8 +55,7 @@ const mapGeoObjToTuple = ({ lat, lon }) => [lat, lon];
 function App() {
   const mapDefaultZoom = 4;
   const defaultPosition = [50, 0];
-  let mapPosition, mapZoom;
-  
+  const [map, setMap] = useState();
   const { current: pathOptions } = useRef({ color: "red", weight: 2 });
   const { current: pathOptionsSelected } = useRef({
     color: "purple",
@@ -82,13 +83,26 @@ function App() {
       const lat = node.getAttribute("lat");
       const lon = node.getAttribute("lon");
       const time = node.querySelector("time")?.textContent;
-      pts.push({ lat, lon, time });
+      const elevation = node.querySelector("ele")?.textContent;
+      pts.push({ lat, lon, time, elevation });
     }
     return pts;
   }, [doc]);
   const positions = useMemo(() => points.map(mapGeoObjToTuple), [points]);
-  mapPosition = positions[positions.length - 1] ?? defaultPosition;
-  mapZoom = positions.length > 0 ? positions.length * 0.01 ?? mapDefaultZoom : mapDefaultZoom;
+  const mapPosition = useMemo(
+    () => positions[positions.length - 1] ?? defaultPosition,
+    [positions]
+  );
+  const mapZoom = useMemo(
+    () =>
+      positions.length > 0
+        ? positions.length / 400 ?? mapDefaultZoom
+        : mapDefaultZoom,
+    [positions]
+  );
+  useEffect(() => {
+    map && map.setView(mapPosition, mapZoom);
+  }, [map, mapPosition, mapZoom]);
   const positionsSelected = useMemo(
     () =>
       points
@@ -109,6 +123,7 @@ function App() {
       </div>
       <div style={{ width: "1000px", height: "800px" }}>
         <MapContainer
+          whenReady={({ target }) => setMap(target)}
           style={{ width: "100%", height: "100%" }}
           center={mapPosition}
           zoom={mapZoom}
@@ -141,6 +156,9 @@ function App() {
           </Polyline>
         </MapContainer>
       </div>
+      <Plot
+        data={points.map((point) => ({ x: +point.elevation, y: point.time }))}
+      />
     </main>
   );
 }
