@@ -34,7 +34,6 @@ function DistanceMeasurer({ positions }) {
     return <></>;
   }
   const pointA = positions[0];
-  const pointB = positions[positions.length - 1];
   const [distance] = positions.reduce(
     ([sum, prevPoint], position) => [
       sum + map.distance(prevPoint, position),
@@ -52,6 +51,10 @@ function DistanceMeasurer({ positions }) {
 const mapGeoObjToTuple = ({ lat, lon }) => [lat, lon];
 
 function App() {
+  const mapDefaultZoom = 4;
+  const defaultPosition = [50, 0];
+  let mapPosition, mapZoom;
+  
   const { current: pathOptions } = useRef({ color: "red", weight: 2 });
   const { current: pathOptionsSelected } = useRef({
     color: "purple",
@@ -84,6 +87,8 @@ function App() {
     return pts;
   }, [doc]);
   const positions = useMemo(() => points.map(mapGeoObjToTuple), [points]);
+  mapPosition = positions[positions.length - 1] ?? defaultPosition;
+  mapZoom = positions.length > 0 ? positions.length * 0.01 ?? mapDefaultZoom : mapDefaultZoom;
   const positionsSelected = useMemo(
     () =>
       points
@@ -105,9 +110,13 @@ function App() {
       <div style={{ width: "1000px", height: "800px" }}>
         <MapContainer
           style={{ width: "100%", height: "100%" }}
-          center={positions[positions.length - 1] ?? [51.505, -0.09]}
-          zoom={13}
-          scrollWheelZoom={false}
+          center={mapPosition}
+          zoom={mapZoom}
+          dragging={true}
+          doubleClickZoom={false}
+          scrollWheelZoom={true}
+          attributionControl={false}
+          zoomControl={false}
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
