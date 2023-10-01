@@ -4,6 +4,7 @@ import {
   Popup,
   MapContainer,
   TileLayer,
+  useMapEvents,
   useMap,
   Polyline,
 } from "react-leaflet";
@@ -48,17 +49,43 @@ function DistanceMeasurer({ positions }) {
   );
 }
 
+function DisplayPointInfo({ point }) {
+  // if (!point) {
+  //   return <></>;
+  // }
+  const distance = 42;
+  if (!point) return <></>;
+  if (!point.latlng) return <></>;
+  const lat = point.latlng.lat;
+  const lng = point.latlng.lng;
+  console.log(lat, lng)
+
+  return (
+    <>
+      <Popup>
+        lat: {lat} lng: {lng}
+        {/* Elevuation: {Number(distance).toFixed(2)} meters
+        Time: {Number(distance).toFixed(2)}
+        Course: {Number(distance).toFixed(2)} azimute
+        Velocity: {Number(distance).toFixed(2)} m/s */}
+      </Popup>
+    </>
+  );
+}
+
 const mapGeoObjToTuple = ({ lat, lon }) => [lat, lon];
 
 function App() {
   const mapDefaultZoom = 4;
   const defaultPosition = [50, 0];
   let mapPosition, mapZoom;
+
+  const [selectedPoint, setSelectedPoint] = useState(null);
   
-  const { current: pathOptions } = useRef({ color: "red", weight: 2 });
+  const { current: pathOptions } = useRef({ color: "red", weight: 4 });
   const { current: pathOptionsSelected } = useRef({
     color: "purple",
-    weight: 3,
+    weight: 4,
   });
   const { current: pathOptionsSelectedHover } = useRef({ weight: 5 });
   const { current: DATE } = useRef({
@@ -108,7 +135,7 @@ function App() {
         </label>
       </div>
       <div style={{ width: "1000px", height: "800px" }}>
-        <MapContainer
+        <MapContainer 
           style={{ width: "100%", height: "100%" }}
           center={mapPosition}
           zoom={mapZoom}
@@ -122,7 +149,13 @@ function App() {
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-          <Polyline pathOptions={pathOptions} positions={positions} />
+          <Polyline pathOptions={pathOptions} positions={positions}
+          eventHandlers={{
+            click: (e) => {console.log(e); e.target.openPopup(); setSelectedPoint(e); console.log(selectedPoint);},
+          }} 
+          >
+            <DisplayPointInfo point={selectedPoint} />
+          </Polyline>
           <Polyline
             pathOptions={pathOptionsSelected}
             positions={positionsSelected}
@@ -135,6 +168,7 @@ function App() {
                 e.target.setStyle(pathOptionsSelected);
                 e.target.closePopup();
               },
+              click: (e) => {console.log(e); e.target.openPopup(); setSelectedPoint(e); console.log(selectedPoint);},
             }}
           >
             <DistanceMeasurer positions={positionsSelected} />
